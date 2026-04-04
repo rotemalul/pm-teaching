@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PM Behavioral Prep</title>
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f8fafc; }
+    textarea { resize: vertical; }
+    .fade-in { animation: fadeIn 0.2s ease-in; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+    ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: #f1f5f9; } ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useMemo, useEffect, useCallback } = React;
+
+// ─── Data ────────────────────────────────────────────────────────────────────
+
+const CATEGORIES = [
+  "Leadership","Prioritization","Stakeholder Management","Collaboration",
+  "Customer Focus","Problem Solving","Failure & Setbacks","Communication",
+  "Execution","Growth & Adaptability","Data & Analytics","Ethics"
+];
+
+const CAT_STYLE = {
+  "Leadership":             "bg-purple-100 text-purple-800",
+  "Prioritization":         "bg-blue-100 text-blue-800",
+  "Stakeholder Management": "bg-orange-100 text-orange-800",
+  "Collaboration":          "bg-green-100 text-green-800",
+  "Customer Focus":         "bg-pink-100 text-pink-800",
+  "Problem Solving":        "bg-yellow-100 text-yellow-800",
+  "Failure & Setbacks":     "bg-red-100 text-red-800",
+  "Communication":          "bg-teal-100 text-teal-800",
+  "Execution":              "bg-indigo-100 text-indigo-800",
+  "Growth & Adaptability":  "bg-cyan-100 text-cyan-800",
+  "Data & Analytics":       "bg-lime-100 text-lime-800",
+  "Ethics":                 "bg-gray-100 text-gray-700",
+};
+
+const STAR_HINTS = {
+  "Leadership":             { S:"Set the scene — what was the team/project and what leadership gap existed?", T:"What was your specific role and what were you trying to achieve?", A:"What concrete steps did YOU personally take to lead, influence, or motivate?", R:"What changed? Quantify impact (team performance, shipped features, morale)." },
+  "Prioritization":         { S:"Describe the competing demands or roadmap pressure you were facing.", T:"What decision needed to be made and what was at stake?", A:"How did you frame trade-offs? What criteria or framework did you apply?", R:"What was shipped or deprioritized? What was the business outcome?" },
+  "Stakeholder Management": { S:"Who were the stakeholders involved and what was the tension or misalignment?", T:"What was your responsibility in navigating the situation?", A:"How did you listen, communicate, negotiate, or find common ground?", R:"What was the resolution? How did it affect the project and the relationship?" },
+  "Collaboration":          { S:"Which teams were involved and what was the challenge in working together?", T:"What was your specific role in driving collaboration?", A:"What did you do to bridge gaps, resolve conflict, or create shared ownership?", R:"What was delivered and how did the team dynamic improve?" },
+  "Customer Focus":         { S:"What was the user problem or feedback signal you were responding to?", T:"What were you trying to achieve for the user?", A:"How did you research, advocate for the user, or design the solution?", R:"What improved? Use retention, NPS, CSAT, or engagement data if you have it." },
+  "Problem Solving":        { S:"Describe the problem — how complex or ambiguous was it?", T:"What outcome were you accountable for?", A:"Walk through your problem-solving process step by step. Be specific.", R:"What did you solve and what was the measurable impact?" },
+  "Failure & Setbacks":     { S:"What happened? Be direct and honest about the failure or mistake.", T:"What were you responsible for?", A:"How did you respond in the moment and what did you do to recover or fix it?", R:"What did you learn and how did you specifically apply that learning later?" },
+  "Communication":          { S:"Who was the audience and what was the communication challenge?", T:"What did you need to convey, align on, or change?", A:"How did you tailor your message, medium, and delivery approach?", R:"What was the outcome — was the audience aligned, persuaded, or unblocked?" },
+  "Execution":              { S:"What was the scope and complexity of the product or project?", T:"What were you accountable for delivering?", A:"How did you manage the process, risks, dependencies, and team?", R:"Was it shipped on time? What were the results post-launch?" },
+  "Growth & Adaptability":  { S:"What changed or what new challenge appeared that required adaptation?", T:"What did you need to learn, unlearn, or adjust to?", A:"What concrete steps did you take to adapt, pivot, or upskill?", R:"How did you or the product come out stronger on the other side?" },
+  "Data & Analytics":       { S:"What metric or data signal caught your attention? What was the context?", T:"What were you trying to understand or fix?", A:"How did you analyze the data, form hypotheses, and test them?", R:"What did you discover and what decisions or improvements came from it?" },
+  "Ethics":                 { S:"Describe the ethical tension or trade-off you encountered.", T:"What was your responsibility in addressing it?", A:"How did you reason through it and what did you decide to do?", R:"What was the outcome and what did it teach you about your values?" },
+};
+
+const EMPHASIS = {
+  "Leadership":             ["Your specific decision or action (not the team's)", "How you influenced without authority", "The outcome for the team or product"],
+  "Prioritization":         ["The framework you used to decide", "How you communicated the trade-off to stakeholders", "The business impact of your choice"],
+  "Stakeholder Management": ["How you understood their perspective first", "The specific approach you used to align or resolve", "Whether the relationship improved"],
+  "Collaboration":          ["Your personal contribution vs. the team's", "How you handled disagreement constructively", "What you'd do the same or differently"],
+  "Customer Focus":         ["How you validated the user problem", "How you balanced user needs vs. business goals", "Metrics that show user impact"],
+  "Problem Solving":        ["How you broke down ambiguity", "The hypotheses you formed and tested", "Speed of learning and iteration"],
+  "Failure & Setbacks":     ["Ownership — don't deflect blame", "Specific lessons learned (not just 'I learned a lot')", "Evidence you applied the learning"],
+  "Communication":          ["How you adapted to the audience", "What made your message land", "The concrete outcome (decision made, confusion resolved)"],
+  "Execution":              ["How you handled blockers or risks", "Your role vs. the team's role", "Post-launch results and retrospective learnings"],
+  "Growth & Adaptability":  ["What specifically you changed about your approach", "How quickly you adapted", "How the outcome differed because of your flexibility"],
+  "Data & Analytics":       ["Your analytical thinking process", "How you moved from data → insight → decision", "What you did when the data was ambiguous"],
+  "Ethics":                 ["Your personal values and reasoning", "How you handled pressure to go the other way", "Long-term thinking over short-term gain"],
+};
+
+const PRESET_QUESTIONS = [
+  // General PM – Leadership
+  { id:'g1',  text:"Tell me about a time you led a cross-functional team without having direct authority.", category:"Leadership", source:"General PM" },
+  { id:'g2',  text:"Describe a situation where you influenced a key decision without formal authority.", category:"Leadership", source:"General PM" },
+  { id:'g3',  text:"Tell me about a time you had to get buy-in from senior leadership on a controversial product decision.", category:"Leadership", source:"General PM" },
+  { id:'g4',  text:"Describe a time you had to motivate a demoralized or disengaged team.", category:"Leadership", source:"General PM" },
+  { id:'g5',  text:"Tell me about a time you took initiative well beyond your defined role to move a project forward.", category:"Leadership", source:"General PM" },
+  // General PM – Prioritization
+  { id:'g6',  text:"Tell me about a time you had to prioritize between multiple high-impact features. How did you decide?", category:"Prioritization", source:"General PM" },
+  { id:'g7',  text:"Describe a situation with competing priorities from different stakeholders. How did you handle it?", category:"Prioritization", source:"General PM" },
+  { id:'g8',  text:"Tell me about a time you had to say 'no' to a stakeholder's feature request. How did you handle it?", category:"Prioritization", source:"General PM" },
+  { id:'g9',  text:"Give an example of when you had to make a product decision with incomplete or ambiguous data.", category:"Prioritization", source:"General PM" },
+  { id:'g10', text:"Tell me about a time you cut scope or features to meet a deadline. How did you decide what to cut?", category:"Prioritization", source:"General PM" },
+  // General PM – Stakeholder Management
+  { id:'g11', text:"Tell me about a time you had to manage a difficult stakeholder. How did you handle it?", category:"Stakeholder Management", source:"General PM" },
+  { id:'g12', text:"Describe a situation where stakeholders had conflicting opinions on a product direction. How did you resolve it?", category:"Stakeholder Management", source:"General PM" },
+  { id:'g13', text:"Give an example of a time you had to deliver bad news to a stakeholder. How did you approach it?", category:"Stakeholder Management", source:"General PM" },
+  { id:'g14', text:"Tell me about a time you successfully aligned multiple stakeholders around a single product vision.", category:"Stakeholder Management", source:"General PM" },
+  { id:'g15', text:"Describe a time you had to manage expectations with senior executives.", category:"Stakeholder Management", source:"General PM" },
+  // General PM – Collaboration
+  { id:'g16', text:"Tell me about a time you worked closely with engineering to ship a complex feature. How did you ensure alignment?", category:"Collaboration", source:"General PM" },
+  { id:'g17', text:"Describe a situation where you had a disagreement with an engineer or designer. How did you resolve it?", category:"Collaboration", source:"General PM" },
+  { id:'g18', text:"Tell me about a time collaboration between teams broke down. What happened and what did you do?", category:"Collaboration", source:"General PM" },
+  // General PM – Customer Focus
+  { id:'g19', text:"Tell me about a time you discovered an important user pain point. How did you uncover it and what did you do?", category:"Customer Focus", source:"General PM" },
+  { id:'g20', text:"Describe a situation where customer feedback changed the direction of your product.", category:"Customer Focus", source:"General PM" },
+  { id:'g21', text:"Give me an example of a time you had to advocate for the user when business goals conflicted with user needs.", category:"Customer Focus", source:"General PM" },
+  { id:'g22', text:"Tell me about a time you launched a feature that users didn't respond to as expected. What did you do?", category:"Customer Focus", source:"General PM" },
+  // General PM – Problem Solving
+  { id:'g23', text:"Tell me about a time you had to solve a complex problem with limited resources.", category:"Problem Solving", source:"General PM" },
+  { id:'g24', text:"Give me an example of a time you used data to identify an opportunity or solve a problem.", category:"Problem Solving", source:"General PM" },
+  { id:'g25', text:"Tell me about a time a metric gave you an unexpected insight. What did you do with it?", category:"Problem Solving", source:"General PM" },
+  // General PM – Failure & Setbacks
+  { id:'g26', text:"Tell me about a product or feature that failed. What happened and what did you learn?", category:"Failure & Setbacks", source:"General PM" },
+  { id:'g27', text:"Describe a time you made a significant mistake as a PM. How did you handle it?", category:"Failure & Setbacks", source:"General PM" },
+  { id:'g28', text:"Tell me about the most difficult feedback you've received. How did you respond?", category:"Failure & Setbacks", source:"General PM" },
+  { id:'g29', text:"Describe a time you took a calculated risk that didn't pay off. What would you do differently?", category:"Failure & Setbacks", source:"General PM" },
+  // General PM – Communication
+  { id:'g30', text:"Tell me about a time you had to communicate a complex technical concept to a non-technical audience.", category:"Communication", source:"General PM" },
+  { id:'g31', text:"Tell me about a time you had to persuade someone to change their mind using data and storytelling.", category:"Communication", source:"General PM" },
+  { id:'g32', text:"Describe a time when poor communication led to a problem. How did you fix it?", category:"Communication", source:"General PM" },
+  // General PM – Execution
+  { id:'g33', text:"Tell me about the most complex product you've shipped. Walk me through how you managed it.", category:"Execution", source:"General PM" },
+  { id:'g34', text:"Describe a time a project was at risk of going off track. How did you course-correct?", category:"Execution", source:"General PM" },
+  { id:'g35', text:"Tell me about a time you launched a product under a very tight deadline.", category:"Execution", source:"General PM" },
+  { id:'g36', text:"Tell me about a time you managed significant scope creep. How did you handle it?", category:"Execution", source:"General PM" },
+  // General PM – Growth & Adaptability
+  { id:'g37', text:"Tell me about a time you had to quickly learn something new to succeed in your role.", category:"Growth & Adaptability", source:"General PM" },
+  { id:'g38', text:"Describe a situation where you had to adapt your product strategy based on changing market conditions.", category:"Growth & Adaptability", source:"General PM" },
+  { id:'g39', text:"Tell me about a time you changed your mind on something you believed strongly.", category:"Growth & Adaptability", source:"General PM" },
+  // General PM – Data & Analytics
+  { id:'g40', text:"How do you solve problems with data? Walk me through a specific example.", category:"Data & Analytics", source:"General PM" },
+  { id:'g41', text:"Describe a time when you diagnosed why a product or feature wasn't performing as expected.", category:"Data & Analytics", source:"General PM" },
+  // General PM – Ethics
+  { id:'g42', text:"Tell me about a time you had to make a decision involving an ethical trade-off.", category:"Ethics", source:"General PM" },
+  { id:'g43', text:"Describe a situation where you had to push back on a request because it conflicted with user trust.", category:"Ethics", source:"General PM" },
+  // Agoda-specific
+  { id:'a1', text:"Describe a project you're proud of — what were the key metrics, and how did you decide to make certain decisions?", category:"Execution", source:"Agoda" },
+  { id:'a2', text:"Tell me about a feature you implemented based on customer feedback.", category:"Customer Focus", source:"Agoda" },
+  { id:'a3', text:"Tell me about a time you smoothly managed a situation that diverged from the plan.", category:"Growth & Adaptability", source:"Agoda" },
+  { id:'a4', text:"Tell me about a time when you discovered a bigger opportunity than you initially thought possible.", category:"Problem Solving", source:"Agoda" },
+  { id:'a5', text:"Tell me about a time you took a calculated risk that paid off.", category:"Leadership", source:"Agoda" },
+  { id:'a6', text:"Tell me about a time you clashed with your manager. How did you handle it?", category:"Stakeholder Management", source:"Agoda" },
+  { id:'a7', text:"Tell me about a time you had to persuade someone about an idea — how did you manage it?", category:"Communication", source:"Agoda" },
+  { id:'a8', text:"Describe a conflict with a stakeholder and how you resolved it.", category:"Stakeholder Management", source:"Agoda" },
+  { id:'a9', text:"A key metric has dropped — walk me through how you'd diagnose and respond.", category:"Data & Analytics", source:"Agoda" },
+];
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function uid() { return Math.random().toString(36).slice(2, 10); }
+
+function scoreStory(story, question) {
+  let score = 0;
+  if (story.categories.includes(question.category)) score += 5;
+  const qWords = new Set(question.text.toLowerCase().match(/\b\w{4,}\b/g) || []);
+  const sWords = (story.title + ' ' + story.text).toLowerCase().match(/\b\w{4,}\b/g) || [];
+  sWords.forEach(w => { if (qWords.has(w)) score += 1; });
+  return score;
+}
+
+function Tag({ label, small }) {
+  const cls = CAT_STYLE[label] || "bg-gray-100 text-gray-700";
+  return <span className={`inline-block rounded-full font-medium ${small ? "text-xs px-2 py-0.5" : "text-xs px-2.5 py-1"} ${cls}`}>{label}</span>;
+}
+
+function SourceBadge({ source }) {
+  const map = { "Agoda": "bg-orange-500", "General PM": "bg-blue-500", "Custom": "bg-violet-500" };
+  return <span className={`inline-block text-white text-xs font-semibold px-2.5 py-0.5 rounded-full ${map[source] || "bg-gray-400"}`}>{source}</span>;
+}
+
+// ─── Modal ───────────────────────────────────────────────────────────────────
+
+function Modal({ title, onClose, children }) {
+  return (
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto fade-in" onClick={e => e.stopPropagation()}>
+        <div className="flex justify-between items-center px-6 py-4 border-b">
+          <h2 className="text-lg font-semibold text-gray-800">{title}</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+        </div>
+        <div className="p-6">{children}</div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Story Form ───────────────────────────────────────────────────────────────
+
+function StoryForm({ initial, onSave, onCancel }) {
+  const [title, setTitle] = useState(initial?.title || '');
+  const [text, setText] = useState(initial?.text || '');
+  const [cats, setCats] = useState(initial?.categories || []);
+
+  function toggle(c) { setCats(p => p.includes(c) ? p.filter(x => x !== c) : [...p, c]); }
+  function handleSave() {
+    if (!title.trim() || !text.trim()) return alert("Please fill in the title and story.");
+    if (cats.length === 0) return alert("Please select at least one competency.");
+    onSave({ title: title.trim(), text: text.trim(), categories: cats });
+  }
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Story title <span className="text-red-400">*</span></label>
+        <input value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g. Redesigned checkout at Startup X" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Your story <span className="text-red-400">*</span></label>
+        <p className="text-xs text-gray-400 mb-1">Just write it naturally — no need to format it yet. What happened, what you did, what changed.</p>
+        <textarea value={text} onChange={e => setText(e.target.value)} rows={6} placeholder="Tell your story freely. The app will help you shape it into a STAR answer for any question." className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">Competency areas <span className="text-red-400">*</span> <span className="text-gray-400 font-normal">(select all that apply)</span></label>
+        <div className="flex flex-wrap gap-2">
+          {CATEGORIES.map(c => (
+            <button key={c} onClick={() => toggle(c)} className={`text-xs px-3 py-1.5 rounded-full border font-medium transition ${cats.includes(c) ? `${CAT_STYLE[c]} border-transparent` : 'bg-white text-gray-600 border-gray-300 hover:border-gray-400'}`}>{c}</button>
+          ))}
+        </div>
+      </div>
+      <div className="flex gap-2 pt-2">
+        <button onClick={handleSave} className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-lg text-sm font-medium">Save Story</button>
+        <button onClick={onCancel} className="border border-gray-300 text-gray-600 px-5 py-2 rounded-lg text-sm font-medium hover:bg-gray-50">Cancel</button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Deep Dive Question Engine ───────────────────────────────────────────────
+
+const UNIVERSAL_DEEP_QUESTIONS = [
+  "What would you do differently if you had to do it again?",
+  "What was the biggest risk you took, and how did you mitigate it?",
+  "What almost went wrong that didn't? How close was it?",
+  "What was the single thing that made this succeed?",
+  "What was YOUR specific contribution vs. the team's?",
+  "How long until you saw the results? Were there any dips before the improvement?",
+  "What would failure have looked like, and how would you have responded?",
+  "How did this experience change the way you approach similar problems?",
+];
+
+const CATEGORY_DEEP_QUESTIONS = {
+  "Leadership": [
+    "How did you get the team to follow your direction without direct authority?",
+    "Who was the most resistant person, and how did you bring them around?",
+    "What was the biggest pushback you received and exactly how did you address it?",
+    "How did you handle someone on the team who disagreed with your approach?",
+    "How did you know when to push harder vs. when to compromise?",
+  ],
+  "Prioritization": [
+    "Walk me through the exact framework or criteria you used to make the trade-off.",
+    "What did you explicitly decide NOT to do, and how did you justify that?",
+    "How did you communicate the deprioritized items to the people who wanted them?",
+    "In hindsight, was it the right call? What data confirmed or challenged it?",
+    "How did you handle pressure to reverse the prioritization decision?",
+  ],
+  "Stakeholder Management": [
+    "What was your stakeholder's initial reaction when you proposed this?",
+    "How long did it take to get full buy-in? What were the key turning points?",
+    "What data or argument finally convinced them?",
+    "Did the relationship change after this? How?",
+    "What would you have done if they still said no?",
+  ],
+  "Collaboration": [
+    "What was the specific moment where collaboration almost broke down?",
+    "How did you align on a shared definition of success across teams?",
+    "What did each team have to give up to make this work?",
+    "How did you handle a situation where another team missed a dependency?",
+    "What process or ritual did you put in place to keep everyone in sync?",
+  ],
+  "Customer Focus": [
+    "How did you validate that this was actually the right problem to solve for users?",
+    "What user research did you do before building? What surprised you?",
+    "Did any users push back on the change? How did you handle it?",
+    "How did you balance what users said they wanted vs. what the data showed they needed?",
+    "What user signals would have told you this was the wrong direction?",
+  ],
+  "Problem Solving": [
+    "What other solutions did you seriously consider before settling on this one?",
+    "How did you validate your hypothesis before committing fully?",
+    "What would you have done if this approach hadn't worked?",
+    "At what point did you know you had the right solution?",
+    "How did you break down the ambiguity into something actionable?",
+  ],
+  "Failure & Setbacks": [
+    "What's the thing you're most uncertain about from this experience?",
+    "Was there a moment you seriously thought this wouldn't work?",
+    "Who else was affected by the failure, and how did you handle those relationships?",
+    "How did leadership respond, and how did you manage that?",
+    "What's the most honest lesson you took away?",
+  ],
+  "Communication": [
+    "How did different audiences receive the same message differently?",
+    "What format or medium did you choose and why?",
+    "Was there a message that landed badly at first — how did you adjust?",
+    "How did you handle questions you didn't have answers to?",
+    "What would you change about how you communicated this?",
+  ],
+  "Execution": [
+    "What was in the MVP vs. what came in later iterations — and how did you decide?",
+    "What was the timeline and what were the key constraints driving it?",
+    "What were the biggest blockers and exactly how did you remove them?",
+    "How did you know the quality was good enough to ship?",
+    "What happened in the first week after launch?",
+  ],
+  "Growth & Adaptability": [
+    "What assumptions did you have to let go of, and how hard was that?",
+    "How quickly did you adapt — what slowed you down?",
+    "What did you have to unlearn to succeed here?",
+    "How did others on the team respond to the change?",
+    "What would have happened if you hadn't adapted?",
+  ],
+  "Data & Analytics": [
+    "How confident were you in those numbers, and what were the potential error sources?",
+    "What was your sample size and how long did the test or analysis run?",
+    "Were there any confounding factors you had to control for?",
+    "What did you do when you got results that surprised or contradicted your hypothesis?",
+    "How did you move from insight to decision — who else was in that room?",
+  ],
+  "Ethics": [
+    "Was there pressure from above to go the other way? How did you handle it?",
+    "How did you reason through the trade-off — what values guided you?",
+    "What would the cost have been if you had made the other choice?",
+    "How did others on the team feel about the decision?",
+    "Would you make the same call today?",
+  ],
+};
+
+const KEYWORD_QUESTIONS = [
+  { pattern: /a\/b test|ab test|experiment/i,   q: "Walk me through how you designed the A/B test — hypothesis, control, treatment, and success metric." },
+  { pattern: /a\/b test|ab test|experiment/i,   q: "How did you determine the test was statistically significant? What was your sample size?" },
+  { pattern: /revenue|monetiz/i,                q: "What was the exact revenue you were giving up or gaining? How did you quantify that trade-off?" },
+  { pattern: /\d+%|\d+ percent/i,               q: "How did you measure those numbers and how long before they stabilized? Were there any dips first?" },
+  { pattern: /mvp|prototype|proof of concept/i, q: "What was the decision process for what to include vs. exclude from the MVP?" },
+  { pattern: /sprint|agile|scrum/i,             q: "How did you manage scope within the sprint? What almost didn't make it in?" },
+  { pattern: /manag|leadership|execut/i,        q: "What was management's initial reaction when you first proposed this? How did it evolve?" },
+  { pattern: /google|seo|search rank/i,         q: "How were you monitoring the SEO or search ranking impact? What tools or signals were you tracking?" },
+  { pattern: /convinc|persuad|pushback/i,       q: "What argument or data point finally made the difference in convincing them?" },
+  { pattern: /data|metric|kpi|analytics/i,      q: "How did you ensure the data you were working with was reliable and not misleading?" },
+  { pattern: /team|engineer|design/i,           q: "How did the team feel about the approach at the start vs. at the end?" },
+  { pattern: /third.?party|vendor|partner/i,    q: "Did you evaluate other third-party alternatives before deciding on this direction?" },
+  { pattern: /launch|ship|deploy|release/i,     q: "What happened in the first 24–48 hours after launch? What did you monitor first?" },
+  { pattern: /user|customer|feedback/i,         q: "How did you collect user feedback during or after? What surprised you most?" },
+  { pattern: /risk|bet|uncertain/i,             q: "How did you assess the downside risk? What was your contingency if this didn't work?" },
+  { pattern: /compet|market|industry/i,         q: "How did you factor in what competitors were doing when making this decision?" },
+  { pattern: /priorit|trade.?off|decision/i,    q: "What was the option you almost went with instead, and what made you choose this path?" },
+  { pattern: /stakeholder|cross.?functional/i,  q: "Who were the most difficult stakeholders and what was the key to unlocking their support?" },
+];
+
+function generateDeepDiveQuestions(story) {
+  const text = (story.title + ' ' + story.text).toLowerCase();
+  const result = { universal: [], category: [], keyword: [] };
+
+  // Universal — always include a curated subset
+  result.universal = UNIVERSAL_DEEP_QUESTIONS.slice(0, 5);
+
+  // Category-specific
+  const catQuestions = new Set();
+  story.categories.forEach(cat => {
+    (CATEGORY_DEEP_QUESTIONS[cat] || []).forEach(q => catQuestions.add(q));
+  });
+  result.category = [...catQuestions].slice(0, 8);
+
+  // Keyword-based — scan story text
+  const seen = new Set();
+  KEYWORD_QUESTIONS.forEach(({ pattern, q }) => {
+    if (pattern.test(text) && !seen.has(q)) {
+      seen.add(q);
+      result.keyword.push(q);
+    }
+  });
+
+  return result;
+}
+
+// ─── Auto-Draft Engine ────────────────────────────────────────────────────────
+
+function generateDraftAnswer(question, story) {
+  const qLower = question.toLowerCase();
+  const rawSentences = story.text.split(/(?<=[.!?])\s+|[\n]+/).map(s => s.trim()).filter(s => s.length > 20);
+
+  // Score each sentence by keyword overlap with the question
+  const qKeywords = (qLower.match(/\b\w{5,}\b/g) || []);
+  function relevance(s) { const sl = s.toLowerCase(); return qKeywords.filter(k => sl.includes(k)).length; }
+  const ranked = [...rawSentences].sort((a, b) => relevance(b) - relevance(a));
+  const top = ranked.slice(0, 3).filter(s => relevance(s) > 0);
+  const storyContext = top.length > 0 ? top.join(' ') : rawSentences.slice(0, 2).join(' ');
+
+  if (/a\/b test|ab test|experiment|control.*treatment|statistical/i.test(qLower)) {
+    return `We set up a controlled A/B test with a clear hypothesis: that our proprietary solution would outperform the third-party widget on both engagement and performance.\n\n${storyContext}\n\nThe control group saw the original (Taboola) experience; the treatment group saw our internal widget. Our north-star metric was click-through rate on the related articles, with page load time and session duration as guardrail metrics. We ran the test for about a week to accumulate enough traffic for confidence, then declared a winner based on the results.`;
+  }
+
+  if (/revenue|cost|money|quantif|trade.?off|giving up/i.test(qLower)) {
+    return `${storyContext}\n\nTo quantify the trade-off, we compared the direct ad revenue from Taboola's widget against the estimated value of recovering our #1 Google Search ranking — which drove the majority of our organic traffic. The SEO recovery was worth significantly more in the long run than the Taboola CPM revenue. We modelled a break-even scenario: how long would it take for improved session metrics and organic traffic recovery to offset the lost widget revenue? The math made the decision clear.`;
+  }
+
+  if (/convinc|persuad|buy.?in|argument|manag|leadership|initial reaction/i.test(qLower)) {
+    return `${storyContext}\n\nManagement's initial reaction was skeptical — giving up a live revenue stream is always a hard sell. The argument that finally landed was framing it not as "we're losing Taboola revenue" but as "we're investing that revenue into recovering our SEO position, which is worth multiples more." I backed this with data: our organic search traffic numbers before and after the Google ranking drop, and a projection of what getting back to #1 would mean for total page views and ad inventory. The A/B test data was the final unlock — once we showed that users preferred our widget AND it loaded faster, the decision was straightforward.`;
+  }
+
+  if (/risk|contingency|wrong|fail|backup|downside|didn't work/i.test(qLower)) {
+    return `${storyContext}\n\nThe main risk was building something that performed worse than Taboola — we'd lose the revenue AND still have the SEO problem. To mitigate this, we ran the A/B test before fully committing. The rollback plan was simple: if our widget underperformed on CTR or hurt load times, we keep Taboola running and go back to the drawing board. We also identified the minimum threshold our widget needed to hit to justify the switch, so the decision criteria were defined before we saw the results — not after.`;
+  }
+
+  if (/metric|measure|number|data|kpi|stabili|sample|confident|error/i.test(qLower)) {
+    return `${storyContext}\n\nWe tracked three primary metrics: click-through rate on the related articles widget, page load time for affected article pages, and session duration / pages per session. The data was pulled from our internal analytics platform. One thing we were careful about was separating the widget's CTR from organic navigation — we wanted to isolate the widget's actual contribution. The numbers we saw (~10% improvement in session time, ~40% in pages per session) were consistent over the full test week, which gave us confidence they weren't noise. We also cross-checked against our SEO ranking tools to confirm the correlation between removing Taboola and the Google Search recovery.`;
+  }
+
+  if (/different|learn|retrospect|again|hindsight|would you change/i.test(qLower)) {
+    return `${storyContext}\n\nIf I were to do it again, I'd instrument the SEO impact monitoring from day one — we were a bit reactive in noticing the ranking drop. I'd set up automated alerts for search ranking changes tied to any major third-party integration. The main learning was that third-party tools often come with hidden costs that don't show up on the vendor's pitch deck. I've applied this by always asking "what does this touch on our technical stack and our SEO?" before any integration decision now.`;
+  }
+
+  if (/team|engineer|design|collaborat|feel|start vs|energy/i.test(qLower)) {
+    return `${storyContext}\n\nThe engineering team was actually energised by the idea — building something internal using our own content graph was more interesting than maintaining a third-party integration. The challenge was getting alignment on the timeline. Engineers wanted to build the "right" version; I pushed for a minimal version we could test quickly. We landed on a one-sprint MVP that was just good enough to run the A/B test, with the understanding that we'd iterate if we kept it. That framing helped — it felt like a low-stakes experiment rather than a permanent architectural decision.`;
+  }
+
+  if (/user|customer|feedback|research|validate/i.test(qLower)) {
+    return `${storyContext}\n\nWe let the A/B test be our primary user validation mechanism — instead of asking users what they preferred, we watched what they actually clicked. The data showed a clear preference for our internal widget. What surprised us was the magnitude: we expected a modest improvement, not a statistically clear winner in under a week of testing. Post-rollout, the engagement metrics (pages per session, session duration) confirmed the trend held over time, which gave us confidence this wasn't just a novelty effect.`;
+  }
+
+  if (/mvp|scope|cut|include|exclude|sprint|what made it in/i.test(qLower)) {
+    return `${storyContext}\n\nFor the MVP, the only thing that mattered was: can we pull related articles from our content graph and display them in the article page faster than Taboola loads? That was it. We cut personalisation, visual customisation, and click-tracking instrumentation — all of that came later. The hardest thing to leave out was the ranking algorithm for which articles to surface. We went with a simple relevance score from our existing context tool rather than building something more sophisticated, and honestly it was good enough to win the A/B test.`;
+  }
+
+  if (/launch|ship|deploy|first.*week|24|48|monitor/i.test(qLower)) {
+    return `${storyContext}\n\nThe first week after full rollout was mostly monitoring. We had dashboards open for page load time (to make sure we hadn't introduced regressions), CTR on the widget, and session metrics. The thing we watched most anxiously was the Google Search ranking — that was the whole point. It didn't recover overnight; it took a few days before we started seeing movement back toward position 1. Within about a week we were back at the top. That was the moment the team felt the decision had been fully validated.`;
+  }
+
+  if (/alternative|other option|consider|instead|went with/i.test(qLower)) {
+    return `${storyContext}\n\nBefore landing on building internally, we considered three options: keeping Taboola and trying to negotiate a lighter-weight embed, switching to a different third-party provider (Outbrain was on the shortlist), or building our own. The third-party options all had the same fundamental problem — external scripts with load-time overhead we couldn't fully control. Building internally was the only option that gave us full control over both the content relevance and the performance. The existence of our internal content graph made this feasible in a single sprint; without it, we'd have needed much longer.`;
+  }
+
+  // Generic fallback using story context
+  return `${storyContext}\n\n[Expand on this with specifics: ${question.slice(0, 80)}${question.length > 80 ? '...' : ''}]\n\nKey points to address:\n• What exactly happened / what was your decision\n• Why you made that specific choice\n• What the outcome was and how you know`;
+}
+
+// ─── Deep Dive Panel ──────────────────────────────────────────────────────────
+
+function QuestionCard({ question, idx, prefix, story, answers, onSave }) {
+  const qKey = prefix + '_' + idx;
+  const saved = answers[qKey] || '';
+  const [open,      setOpen]      = useState(false);
+  const [draft,     setDraft]     = useState(saved);
+  const [generating, setGenerating] = useState(false);
+  const [saveFlash, setSaveFlash]  = useState(false);
+  const hasAnswer = saved.trim().length > 0;
+
+  function handleSave() {
+    onSave(qKey, draft);
+    setSaveFlash(true);
+    setTimeout(() => setSaveFlash(false), 1800);
+  }
+
+  function handleAutoDraft() {
+    setGenerating(true);
+    setOpen(true);
+    setTimeout(() => {
+      const d = generateDraftAnswer(question, story);
+      setDraft(d);
+      setGenerating(false);
+    }, 500);
+  }
+
+  function handleClear() {
+    setDraft('');
+    onSave(qKey, '');
+  }
+
+  return (
+    <div className={`rounded-xl border transition ${hasAnswer ? 'border-emerald-200 bg-emerald-50/40' : 'border-gray-100 bg-white'} overflow-hidden`}>
+      {/* Question row */}
+      <div className="flex gap-2 items-start px-4 py-3">
+        <span className={`font-bold text-sm mt-0.5 shrink-0 ${hasAnswer ? 'text-emerald-500' : 'text-gray-300'}`}>
+          {hasAnswer ? '✓' : idx + 1}
+        </span>
+        <p className="text-sm text-gray-800 leading-snug flex-1">{question}</p>
+      </div>
+
+      {/* Action buttons */}
+      <div className="flex gap-2 px-4 pb-3">
+        <button
+          onClick={() => setOpen(o => !o)}
+          className={`text-xs px-3 py-1.5 rounded-lg font-medium border transition ${open ? 'bg-gray-800 text-white border-gray-800' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'}`}>
+          {open ? '▲ Close' : hasAnswer ? '✏️ Edit Answer' : '📝 Write Answer'}
+        </button>
+        <button
+          onClick={handleAutoDraft}
+          disabled={generating}
+          className="text-xs px-3 py-1.5 rounded-lg font-medium border bg-white text-violet-600 border-violet-200 hover:bg-violet-50 transition disabled:opacity-50 flex items-center gap-1">
+          {generating ? <span className="animate-pulse">✨ Drafting…</span> : '✨ Auto-draft from story'}
+        </button>
+      </div>
+
+      {/* Answer area */}
+      {open && (
+        <div className="px-4 pb-4 space-y-2 fade-in border-t border-gray-100 pt-3">
+          <textarea
+            value={draft}
+            onChange={e => setDraft(e.target.value)}
+            rows={6}
+            placeholder="Type your answer here, or hit Auto-draft to get a starting point from your story…"
+            className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-800 leading-relaxed focus:outline-none focus:ring-2 focus:ring-violet-400 bg-white"
+          />
+          <div className="flex gap-2 items-center">
+            <button onClick={handleSave} className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition ${saveFlash ? 'bg-emerald-500 text-white' : 'bg-indigo-600 hover:bg-indigo-700 text-white'}`}>
+              {saveFlash ? '✓ Saved!' : 'Save Answer'}
+            </button>
+            {draft && <button onClick={handleClear} className="px-3 py-1.5 rounded-lg text-xs text-gray-400 hover:text-red-500 border border-gray-200 hover:border-red-200 transition">Clear</button>}
+            <span className="text-xs text-gray-400 ml-auto">{draft.split(/\s+/).filter(Boolean).length} words</span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DeepDivePanel({ story }) {
+  const storageKey = `pm_dive_answers_${story.id}`;
+  const [answers, setAnswers] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(storageKey) || '{}'); } catch { return {}; }
+  });
+
+  function saveAnswer(qKey, text) {
+    const updated = { ...answers, [qKey]: text };
+    setAnswers(updated);
+    try { localStorage.setItem(storageKey, JSON.stringify(updated)); } catch {}
+  }
+
+  const { universal, category, keyword } = generateDeepDiveQuestions(story);
+  const answeredCount = Object.values(answers).filter(v => v.trim()).length;
+  const totalCount = keyword.length + category.length + universal.length;
+
+  function Section({ questions, color, label, icon, prefix }) {
+    if (!questions.length) return null;
+    return (
+      <div>
+        <p className={`text-xs font-semibold uppercase tracking-wide mb-2 ${color}`}>{icon} {label}</p>
+        <div className="space-y-2">
+          {questions.map((q, i) => (
+            <QuestionCard key={prefix + i} question={q} idx={i} prefix={prefix} story={story} answers={answers} onSave={saveAnswer} />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="fade-in space-y-5">
+      {/* Header bar */}
+      <div className="flex items-center justify-between bg-rose-50 border border-rose-200 rounded-xl p-3">
+        <p className="text-xs text-rose-700 leading-snug"><strong>Practice mode:</strong> Write or auto-draft an answer for each question. Your answers are saved automatically.</p>
+        <span className="text-xs font-semibold text-rose-600 bg-rose-100 px-2.5 py-1 rounded-full shrink-0 ml-3">{answeredCount}/{totalCount} answered</span>
+      </div>
+      {keyword.length > 0 && <Section questions={keyword} color="text-orange-600" label="From your specific story" icon="🔍" prefix="kw" />}
+      <Section questions={category} color="text-indigo-600" label="By competency area" icon="🎯" prefix="cat" />
+      <Section questions={universal} color="text-gray-500" label="Universal follow-ups" icon="💡" prefix="uni" />
+    </div>
+  );
+}
+
+// ─── STAR Answer Shaper ───────────────────────────────────────────────────────
+
+function AnswerShaper({ question, story }) {
+  const hints = STAR_HINTS[question.category] || STAR_HINTS["Problem Solving"];
+  const tips  = EMPHASIS[question.category] || [];
+  const labels = { S:"Situation", T:"Task", A:"Action", R:"Result" };
+  const colors = { S:"bg-yellow-50 border-yellow-300 text-yellow-800", T:"bg-green-50 border-green-300 text-green-800", A:"bg-blue-50 border-blue-300 text-blue-800", R:"bg-purple-50 border-purple-300 text-purple-800" };
+
+  return (
+    <div className="fade-in space-y-5">
+      {/* Story text */}
+      <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Your Story — {story.title}</p>
+        <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{story.text}</p>
+      </div>
+
+      {/* STAR guide */}
+      <div>
+        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">STAR Guide — {question.category}</p>
+        <div className="space-y-2">
+          {Object.entries(hints).map(([key, hint]) => (
+            <div key={key} className={`flex gap-3 p-3 rounded-lg border ${colors[key]}`}>
+              <div className="font-bold text-sm w-5 shrink-0">{key}</div>
+              <div>
+                <div className="text-xs font-semibold mb-0.5">{labels[key]}</div>
+                <div className="text-xs leading-relaxed opacity-90">{hint}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Things to emphasize */}
+      {tips.length > 0 && (
+        <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4">
+          <p className="text-xs font-semibold text-indigo-700 uppercase tracking-wide mb-2">Key things to emphasize for this question type</p>
+          <ul className="space-y-1">
+            {tips.map((t,i) => <li key={i} className="text-xs text-indigo-800 flex gap-2"><span className="text-indigo-400 mt-0.5">→</span><span>{t}</span></li>)}
+          </ul>
+        </div>
+      )}
+
+      {/* Opening line tip */}
+      <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+        <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide mb-1">Opening line tip</p>
+        <p className="text-xs text-amber-800">Start with context, not the answer. E.g., <em>"At [Company], while working on [project], I faced a situation where…"</em> — then move into your Situation.</p>
+      </div>
+    </div>
+  );
+}
+
+// ─── Practice Tab ─────────────────────────────────────────────────────────────
+
+function PracticeTab({ stories, questions }) {
+  const [sourceFilter, setSourceFilter] = useState("All");
+  const [catFilter,    setCatFilter]    = useState("All");
+  const [qIndex,       setQIndex]       = useState(0);
+  const [shaping,      setShaping]      = useState(false);
+  const [deepDiving,   setDeepDiving]   = useState(false);
+  const [pickedStoryId, setPickedStoryId] = useState(null);
+
+  const filtered = useMemo(() => questions.filter(q =>
+    (sourceFilter === "All" || q.source === sourceFilter) &&
+    (catFilter    === "All" || q.category === catFilter)
+  ), [questions, sourceFilter, catFilter]);
+
+  const question = filtered[qIndex] || null;
+
+  const ranked = useMemo(() => {
+    if (!question || stories.length === 0) return [];
+    return [...stories].sort((a,b) => scoreStory(b, question) - scoreStory(a, question));
+  }, [question, stories]);
+
+  const displayStory = pickedStoryId ? stories.find(s => s.id === pickedStoryId) : ranked[0];
+
+  useEffect(() => { setQIndex(0); setShaping(false); setDeepDiving(false); setPickedStoryId(null); }, [sourceFilter, catFilter]);
+  useEffect(() => { setShaping(false); setDeepDiving(false); setPickedStoryId(null); }, [qIndex]);
+
+  function next()   { setQIndex(i => Math.min(i+1, filtered.length-1)); }
+  function prev()   { setQIndex(i => Math.max(i-1, 0)); }
+  function random() { setQIndex(Math.floor(Math.random() * filtered.length)); }
+
+  const sources = ["All", "General PM", "Agoda", "Custom"];
+  const cats    = ["All", ...CATEGORIES];
+
+  return (
+    <div className="max-w-3xl mx-auto space-y-5">
+      {/* Filters */}
+      <div className="flex flex-wrap gap-3 items-center">
+        <div className="flex gap-1 bg-white border border-gray-200 rounded-lg p-1 shadow-sm">
+          {sources.map(s => <button key={s} onClick={() => setSourceFilter(s)} className={`px-3 py-1 rounded-md text-sm font-medium transition ${sourceFilter===s ? 'bg-indigo-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}>{s}</button>)}
+        </div>
+        <select value={catFilter} onChange={e => setCatFilter(e.target.value)} className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm text-gray-700 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+          {cats.map(c => <option key={c}>{c}</option>)}
+        </select>
+      </div>
+
+      {filtered.length === 0 ? (
+        <div className="text-center py-16 text-gray-400">No questions match this filter.</div>
+      ) : !question ? null : (
+        <>
+          {/* Question card */}
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 fade-in">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex gap-2 flex-wrap">
+                <SourceBadge source={question.source} />
+                <Tag label={question.category} />
+              </div>
+              <span className="text-xs text-gray-400">{qIndex+1} / {filtered.length}</span>
+            </div>
+            <p className="text-lg font-semibold text-gray-800 leading-snug">{question.text}</p>
+            <div className="flex gap-2 mt-5">
+              <button onClick={prev} disabled={qIndex===0} className="px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-30">← Prev</button>
+              <button onClick={next} disabled={qIndex===filtered.length-1} className="px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-30">Next →</button>
+              <button onClick={random} className="px-4 py-2 bg-indigo-50 border border-indigo-200 rounded-lg text-sm text-indigo-700 font-medium hover:bg-indigo-100 ml-auto">🎲 Random</button>
+            </div>
+          </div>
+
+          {/* Story match */}
+          {stories.length === 0 ? (
+            <div className="bg-white rounded-2xl border-2 border-dashed border-gray-200 p-8 text-center">
+              <p className="text-2xl mb-2">📖</p>
+              <p className="text-gray-500 text-sm font-medium">No stories yet</p>
+              <p className="text-gray-400 text-xs mt-1">Add stories in the Story Bank tab and they'll be matched to questions automatically.</p>
+            </div>
+          ) : (
+            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 space-y-4">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-semibold text-gray-700">
+                  {pickedStoryId ? "Selected story" : ranked.length > 0 ? "Best matched story" : "No strong match"}
+                </p>
+                {ranked.length > 1 && (
+                  <select value={pickedStoryId || ''} onChange={e => { setPickedStoryId(e.target.value || null); setShaping(false); }} className="text-xs border border-gray-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-400 text-gray-600">
+                    <option value="">Auto-match: {ranked[0]?.title}</option>
+                    {ranked.map(s => <option key={s.id} value={s.id}>{s.title}</option>)}
+                  </select>
+                )}
+              </div>
+
+              {displayStory ? (
+                <>
+                  <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                    <p className="text-sm font-semibold text-gray-800 mb-1">{displayStory.title}</p>
+                    <div className="flex flex-wrap gap-1 mb-2">{displayStory.categories.map(c => <Tag key={c} label={c} small />)}</div>
+                    <p className="text-sm text-gray-600 leading-relaxed line-clamp-3">{displayStory.text}</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={() => { setShaping(s => !s); setDeepDiving(false); }} className={`flex-1 py-2.5 rounded-xl text-sm font-semibold border transition ${shaping ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-indigo-700 border-indigo-300 hover:bg-indigo-50'}`}>
+                      {shaping ? "▲ Hide STAR Shaper" : "✦ Shape My Answer"}
+                    </button>
+                    <button onClick={() => { setDeepDiving(s => !s); setShaping(false); }} className={`flex-1 py-2.5 rounded-xl text-sm font-semibold border transition ${deepDiving ? 'bg-rose-600 text-white border-rose-600' : 'bg-white text-rose-600 border-rose-300 hover:bg-rose-50'}`}>
+                      {deepDiving ? "▲ Hide Deep Dive" : "🔍 Deep Dive Questions"}
+                    </button>
+                  </div>
+                  {shaping && <AnswerShaper question={question} story={displayStory} />}
+                  {deepDiving && <DeepDivePanel story={displayStory} />}
+                </>
+              ) : (
+                <p className="text-sm text-gray-400 text-center py-4">None of your stories are tagged for <strong>{question.category}</strong>. Add one or tag an existing story with this competency.</p>
+              )}
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+// ─── Story Bank Tab ───────────────────────────────────────────────────────────
+
+function StoryBankTab({ stories, onAdd, onEdit, onDelete }) {
+  const [showForm,   setShowForm]   = useState(false);
+  const [editId,     setEditId]     = useState(null);
+  const [filter,     setFilter]     = useState("All");
+  const [expanded,   setExpanded]   = useState(null);
+  const [deepDiveId, setDeepDiveId] = useState(null);
+
+  const displayed = filter === "All" ? stories : stories.filter(s => s.categories.includes(filter));
+
+  function handleAdd(data) { onAdd(data); setShowForm(false); }
+  function handleEdit(data) { onEdit(editId, data); setEditId(null); }
+  function startEdit(id) { setEditId(id); setShowForm(false); }
+  function cancelEdit() { setEditId(null); }
+
+  return (
+    <div className="max-w-3xl mx-auto space-y-5">
+      {/* Header */}
+      <div className="flex flex-wrap gap-3 items-center justify-between">
+        <select value={filter} onChange={e => setFilter(e.target.value)} className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm text-gray-700 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+          <option value="All">All categories</option>
+          {CATEGORIES.map(c => <option key={c}>{c}</option>)}
+        </select>
+        <button onClick={() => { setShowForm(true); setEditId(null); }} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm">+ Add Story</button>
+      </div>
+
+      {/* Add form */}
+      {showForm && (
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 fade-in">
+          <p className="text-base font-semibold text-gray-800 mb-4">New Story</p>
+          <StoryForm onSave={handleAdd} onCancel={() => setShowForm(false)} />
+        </div>
+      )}
+
+      {/* Stories list */}
+      {displayed.length === 0 ? (
+        <div className="bg-white rounded-2xl border-2 border-dashed border-gray-200 p-12 text-center fade-in">
+          <p className="text-3xl mb-3">✍️</p>
+          <p className="text-gray-600 font-medium">Your story bank is empty</p>
+          <p className="text-gray-400 text-sm mt-1">Click "+ Add Story" to add your first experience. Just write naturally — the app shapes it for you.</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {displayed.map(story => (
+            <div key={story.id} className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden fade-in">
+              {editId === story.id ? (
+                <div className="p-6">
+                  <p className="text-base font-semibold text-gray-800 mb-4">Edit Story</p>
+                  <StoryForm initial={story} onSave={handleEdit} onCancel={cancelEdit} />
+                </div>
+              ) : (
+                <>
+                  <div className="p-4">
+                    <div className="flex justify-between items-start gap-2">
+                      <div>
+                        <p className="font-semibold text-gray-800 text-sm">{story.title}</p>
+                        <div className="flex flex-wrap gap-1 mt-1.5">{story.categories.map(c => <Tag key={c} label={c} small />)}</div>
+                      </div>
+                      <div className="flex gap-1 shrink-0">
+                        <button onClick={() => setExpanded(e => e === story.id ? null : story.id)} className="text-xs text-gray-400 hover:text-gray-600 px-2 py-1 rounded-lg hover:bg-gray-100">{expanded === story.id ? "▲" : "▼"}</button>
+                        <button onClick={() => startEdit(story.id)} className="text-xs text-indigo-600 hover:text-indigo-800 px-2 py-1 rounded-lg hover:bg-indigo-50">Edit</button>
+                        <button onClick={() => { if(window.confirm('Delete this story?')) onDelete(story.id); }} className="text-xs text-red-400 hover:text-red-600 px-2 py-1 rounded-lg hover:bg-red-50">Delete</button>
+                      </div>
+                    </div>
+                    {expanded !== story.id && <p className="text-xs text-gray-400 mt-2 line-clamp-2">{story.text}</p>}
+                    <button
+                      onClick={() => setDeepDiveId(d => d === story.id ? null : story.id)}
+                      className={`mt-3 w-full py-2 rounded-xl text-xs font-semibold border transition ${deepDiveId === story.id ? 'bg-rose-600 text-white border-rose-600' : 'bg-white text-rose-600 border-rose-200 hover:bg-rose-50'}`}>
+                      {deepDiveId === story.id ? "▲ Hide Deep Dive Questions" : "🔍 Deep Dive — What will they ask me about this story?"}
+                    </button>
+                  </div>
+                  {deepDiveId === story.id && (
+                    <div className="px-4 pb-4 fade-in">
+                      <DeepDivePanel story={story} />
+                    </div>
+                  )}
+                  {expanded === story.id && deepDiveId !== story.id && (
+                    <div className="px-4 pb-4 fade-in">
+                      <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap bg-gray-50 rounded-lg p-3 border border-gray-100">{story.text}</p>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Questions Tab ────────────────────────────────────────────────────────────
+
+function QuestionsTab({ questions, onAdd }) {
+  const [srcFilter, setSrcFilter] = useState("All");
+  const [catFilter, setCatFilter] = useState("All");
+  const [showForm,  setShowForm]  = useState(false);
+  const [qText,     setQText]     = useState('');
+  const [qCat,      setQCat]      = useState('Problem Solving');
+
+  const sources = ["All","General PM","Agoda","Custom"];
+
+  const filtered = questions.filter(q =>
+    (srcFilter === "All" || q.source === srcFilter) &&
+    (catFilter === "All" || q.category === catFilter)
+  );
+
+  function handleAdd() {
+    if (!qText.trim()) return alert("Please enter a question.");
+    onAdd({ text: qText.trim(), category: qCat, source: "Custom" });
+    setQText(''); setQCat('Problem Solving'); setShowForm(false);
+  }
+
+  return (
+    <div className="max-w-3xl mx-auto space-y-5">
+      {/* Filters */}
+      <div className="flex flex-wrap gap-3 items-center justify-between">
+        <div className="flex flex-wrap gap-3">
+          <div className="flex gap-1 bg-white border border-gray-200 rounded-lg p-1 shadow-sm">
+            {sources.map(s => <button key={s} onClick={() => setSrcFilter(s)} className={`px-3 py-1 rounded-md text-sm font-medium transition ${srcFilter===s ? 'bg-indigo-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}>{s}</button>)}
+          </div>
+          <select value={catFilter} onChange={e => setCatFilter(e.target.value)} className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm text-gray-700 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+            <option value="All">All categories</option>
+            {CATEGORIES.map(c => <option key={c}>{c}</option>)}
+          </select>
+        </div>
+        <button onClick={() => setShowForm(s => !s)} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm">+ Add Question</button>
+      </div>
+
+      {/* Add question form */}
+      {showForm && (
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 fade-in space-y-3">
+          <p className="text-sm font-semibold text-gray-700">Add Custom Question</p>
+          <textarea value={qText} onChange={e => setQText(e.target.value)} rows={2} placeholder="e.g. Tell me about a time you had to rebuild trust with a team..." className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+          <select value={qCat} onChange={e => setQCat(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+            {CATEGORIES.map(c => <option key={c}>{c}</option>)}
+          </select>
+          <div className="flex gap-2">
+            <button onClick={handleAdd} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium">Save</button>
+            <button onClick={() => setShowForm(false)} className="border border-gray-300 text-gray-600 px-4 py-2 rounded-lg text-sm hover:bg-gray-50">Cancel</button>
+          </div>
+        </div>
+      )}
+
+      {/* Questions list */}
+      <p className="text-xs text-gray-400">{filtered.length} question{filtered.length !== 1 ? 's' : ''}</p>
+      <div className="space-y-2">
+        {filtered.map(q => (
+          <div key={q.id} className="bg-white rounded-xl border border-gray-200 shadow-sm px-4 py-3 flex gap-3 items-start fade-in">
+            <div className="flex-1 min-w-0">
+              <p className="text-sm text-gray-800 leading-snug">{q.text}</p>
+              <div className="flex gap-2 mt-1.5">
+                <SourceBadge source={q.source} />
+                <Tag label={q.category} small />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── Seeded Stories ───────────────────────────────────────────────────────────
+
+const SEED_STORIES = [
+  {
+    id: "seed_1",
+    title: "Built internal Related Articles widget to replace Taboola at Minute Media",
+    text: "At Minute Media, our leading sports content website had 350 million viewers a month across 10 languages. We were looking for ways to help readers stay longer and read more content. The initial idea was to add a 3rd party tool like Taboola — we implemented it quickly and started earning revenue from it.\n\nA few weeks in, we noticed our Google Search ranking had dropped and we were no longer the first result. We also had technical loading issues on some article pages.\n\nI started investigating solutions and came up with an idea: use our internal context tool to pull connections between articles and build a proprietary 'Related Articles' widget directly inside our pages. Convincing management wasn't easy — I had to make the case to give up Taboola's revenue stream. My argument, backed by the engineering team, was that we could improve performance, fix the technical issue, and get back to the top of Google Search, which was worth more than the Taboola revenue.\n\nWe built a quick MVP in one sprint that pulled related articles from our database and displayed them inline. We ran an A/B test and found that more users clicked our proprietary Related Articles widget than Taboola's. It also loaded faster. After a week of testing, we removed Taboola's widget and rolled out our own. The results: session time improved ~10%, pages per session increased ~40% on average, and we regained our #1 position in Google Search.",
+    categories: ["Prioritization", "Problem Solving", "Execution", "Leadership", "Stakeholder Management", "Data & Analytics", "Customer Focus"]
+  }
+];
+
+// ─── App Root ─────────────────────────────────────────────────────────────────
+
+function App() {
+  const [activeTab, setActiveTab] = useState('practice');
+
+  const [stories, setStories] = useState(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('pm_stories') || '[]');
+      const seedsApplied = localStorage.getItem('pm_seeds_applied');
+      if (!seedsApplied) {
+        const seedIds = new Set(SEED_STORIES.map(s => s.id));
+        const existing = saved.filter(s => !seedIds.has(s.id));
+        const merged = [...SEED_STORIES, ...existing];
+        localStorage.setItem('pm_stories', JSON.stringify(merged));
+        localStorage.setItem('pm_seeds_applied', '1');
+        return merged;
+      }
+      return saved;
+    } catch { return SEED_STORIES; }
+  });
+
+  const [customQuestions, setCustomQuestions] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('pm_custom_qs') || '[]'); } catch { return []; }
+  });
+
+  const allQuestions = [...PRESET_QUESTIONS, ...customQuestions];
+
+  useEffect(() => { localStorage.setItem('pm_stories', JSON.stringify(stories)); }, [stories]);
+  useEffect(() => { localStorage.setItem('pm_custom_qs', JSON.stringify(customQuestions)); }, [customQuestions]);
+
+  function addStory(data)  { setStories(p => [{ id: uid(), ...data }, ...p]); }
+  function editStory(id, data) { setStories(p => p.map(s => s.id === id ? { ...s, ...data } : s)); }
+  function deleteStory(id) { setStories(p => p.filter(s => s.id !== id)); }
+  function addCustomQ(data) { setCustomQuestions(p => [{ id: uid(), ...data }, ...p]); }
+
+  const tabs = [
+    { id:'practice',  label:'🎯 Practice' },
+    { id:'stories',   label:`📖 Story Bank${stories.length > 0 ? ` (${stories.length})` : ''}` },
+    { id:'questions', label:`❓ Questions (${allQuestions.length})` },
+  ];
+
+  return (
+    <div className="min-h-screen bg-slate-50">
+      {/* Header */}
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm">
+        <div className="max-w-4xl mx-auto px-4">
+          <div className="flex items-center gap-4 py-3">
+            <div>
+              <h1 className="text-base font-bold text-gray-900">PM Behavioral Prep</h1>
+              <p className="text-xs text-gray-400 leading-none mt-0.5">Match your stories to any question</p>
+            </div>
+            <nav className="flex gap-1 ml-auto">
+              {tabs.map(t => (
+                <button key={t.id} onClick={() => setActiveTab(t.id)} className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${activeTab===t.id ? 'bg-indigo-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}>{t.label}</button>
+              ))}
+            </nav>
+          </div>
+        </div>
+      </header>
+
+      {/* Body */}
+      <main className="max-w-4xl mx-auto px-4 py-6">
+        {activeTab === 'practice'  && <PracticeTab  stories={stories} questions={allQuestions} />}
+        {activeTab === 'stories'   && <StoryBankTab stories={stories} onAdd={addStory} onEdit={editStory} onDelete={deleteStory} />}
+        {activeTab === 'questions' && <QuestionsTab questions={allQuestions} onAdd={addCustomQ} />}
+      </main>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
