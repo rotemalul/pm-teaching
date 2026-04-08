@@ -962,9 +962,10 @@ const SEED_STORIES = [];
 // ─── GitHub Sync ──────────────────────────────────────────────────────────────
 
 const GH_REPO    = 'rotemalul/pm-teaching';
-const GH_FILE    = 'stories.json';
-const GH_RAW_URL = `https://raw.githubusercontent.com/${GH_REPO}/main/${GH_FILE}`;
-const GH_API_URL = `https://api.github.com/repos/${GH_REPO}/contents/${GH_FILE}`;
+const GH_STORIES_RAW = `https://raw.githubusercontent.com/${GH_REPO}/main/stories.json`;
+const GH_STORIES_API = `https://api.github.com/repos/${GH_REPO}/contents/stories.json`;
+const GH_QUESTIONS_RAW = `https://raw.githubusercontent.com/${GH_REPO}/main/custom_questions.json`;
+const GH_QUESTIONS_API = `https://api.github.com/repos/${GH_REPO}/contents/custom_questions.json`;
 
 // ─── App Root ─────────────────────────────────────────────────────────────────
 
@@ -987,17 +988,25 @@ function App() {
   const [showTokenModal, setShowTokenModal] = useState(false);
   const [tokenDraft,    setTokenDraft]    = useState('');
 
-  // On load: fetch stories.json from GitHub (public repo, no token needed)
+  // On load: fetch both files from GitHub (public repo, no token needed)
   useEffect(() => {
-    fetch(GH_RAW_URL + '?t=' + Date.now())
+    const t = '?t=' + Date.now();
+    fetch(GH_STORIES_RAW + t)
       .then(r => r.ok ? r.json() : null)
       .then(data => {
         if (Array.isArray(data) && data.length > 0) {
           setStories(data);
           localStorage.setItem('pm_stories', JSON.stringify(data));
         }
-      })
-      .catch(() => {});
+      }).catch(() => {});
+    fetch(GH_QUESTIONS_RAW + t)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) {
+          setCustomQuestions(data);
+          localStorage.setItem('pm_custom_qs', JSON.stringify(data));
+        }
+      }).catch(() => {});
   }, []);
 
   const allQuestions = [...PRESET_QUESTIONS, ...customQuestions];
@@ -1018,26 +1027,33 @@ function App() {
     setTokenDraft('');
   }
 
+  async function ghPutFile(apiUrl, data, token, message) {
+    const content = btoa(unescape(encodeURIComponent(JSON.stringify(data, null, 2))));
+    let sha;
+    const getRes = await fetch(apiUrl, {
+      headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github+json' }
+    });
+    if (getRes.ok) { const f = await getRes.json(); sha = f.sha; }
+    const body = { message, content };
+    if (sha) body.sha = sha;
+    const putRes = await fetch(apiUrl, {
+      method: 'PUT',
+      headers: { Authorization: `token ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    if (!putRes.ok) throw new Error('PUT failed');
+  }
+
   async function publishToGitHub() {
     if (!ghToken) { setTokenDraft(''); setShowTokenModal(true); return; }
     setPublishing(true);
     setSyncStatus(null);
     try {
-      const content = btoa(unescape(encodeURIComponent(JSON.stringify(stories, null, 2))));
-      // Get existing file SHA (needed for updates)
-      let sha;
-      const getRes = await fetch(GH_API_URL, {
-        headers: { Authorization: `token ${ghToken}`, Accept: 'application/vnd.github+json' }
-      });
-      if (getRes.ok) { const f = await getRes.json(); sha = f.sha; }
-      const body = { message: 'Update stories via app', content };
-      if (sha) body.sha = sha;
-      const putRes = await fetch(GH_API_URL, {
-        method: 'PUT',
-        headers: { Authorization: `token ${ghToken}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      });
-      setSyncStatus(putRes.ok ? 'ok' : 'error');
+      await Promise.all([
+        ghPutFile(GH_STORIES_API,   stories,         ghToken, 'Update stories via app'),
+        ghPutFile(GH_QUESTIONS_API, customQuestions, ghToken, 'Update custom questions via app'),
+      ]);
+      setSyncStatus('ok');
     } catch(e) { setSyncStatus('error'); }
     setPublishing(false);
     setTimeout(() => setSyncStatus(null), 4000);
