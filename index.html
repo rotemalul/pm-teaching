@@ -1030,7 +1030,7 @@ function MethodsTab({ methods, onAdd, onEdit, onDelete }) {
       {/* Accordion list */}
       <div className="space-y-2">
         {methods.map(m => (
-          <div key={m.id} className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden fade-in">
+          <div key={m.id} className={`rounded-2xl border shadow-sm overflow-hidden fade-in transition-colors ${openId === m.id ? 'bg-gray-50 border-gray-300' : 'bg-white border-gray-200'}`}>
             {/* Title row */}
             <div
               className="flex items-start justify-between px-5 py-4 cursor-pointer hover:bg-gray-50 transition"
