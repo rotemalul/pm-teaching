@@ -948,6 +948,98 @@ function QuestionsTab({ questions, onAdd }) {
   );
 }
 
+// ─── Methods Tab ─────────────────────────────────────────────────────────────
+
+function MethodsTab({ methods, onAdd, onEdit, onDelete }) {
+  const [openId,   setOpenId]   = useState(null);
+  const [editId,   setEditId]   = useState(null);
+  const [showForm, setShowForm] = useState(false);
+  const [titleDraft, setTitleDraft] = useState('');
+  const [bodyDraft,  setBodyDraft]  = useState('');
+
+  function startAdd() {
+    setEditId(null); setTitleDraft(''); setBodyDraft(''); setShowForm(true);
+  }
+
+  function startEdit(m) {
+    setEditId(m.id); setTitleDraft(m.title); setBodyDraft(m.body); setShowForm(true); setOpenId(null);
+  }
+
+  function handleSave() {
+    if (!titleDraft.trim()) return alert('נדרשת כותרת.');
+    if (editId) { onEdit(editId, { title: titleDraft.trim(), body: bodyDraft }); }
+    else        { onAdd({ title: titleDraft.trim(), body: bodyDraft }); }
+    setShowForm(false); setEditId(null); setTitleDraft(''); setBodyDraft('');
+  }
+
+  function handleCancel() {
+    setShowForm(false); setEditId(null); setTitleDraft(''); setBodyDraft('');
+  }
+
+  return (
+    <div className="max-w-3xl mx-auto space-y-4">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <p className="text-xs text-gray-400">פתח אקורדיון בראיון לפי סוג השאלה</p>
+        <button onClick={startAdd} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm">+ Add Method</button>
+      </div>
+
+      {/* Form */}
+      {showForm && (
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 fade-in space-y-3">
+          <p className="text-sm font-semibold text-gray-800">{editId ? 'Edit Method' : 'New Method'}</p>
+          <input
+            value={titleDraft}
+            onChange={e => setTitleDraft(e.target.value)}
+            placeholder="כותרת, e.g. STAR Method / Prioritization Framework"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+          />
+          <RichTextEditor value={bodyDraft} onChange={setBodyDraft} placeholder="כתוב כאן את המתודה, הצעדים, הדוגמאות…" />
+          <div className="flex gap-2 pt-1">
+            <button onClick={handleSave} className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-lg text-sm font-medium">שמור</button>
+            <button onClick={handleCancel} className="border border-gray-300 text-gray-600 px-5 py-2 rounded-lg text-sm hover:bg-gray-50">ביטול</button>
+          </div>
+        </div>
+      )}
+
+      {/* Empty state */}
+      {methods.length === 0 && !showForm && (
+        <div className="bg-white rounded-2xl border-2 border-dashed border-gray-200 p-12 text-center fade-in">
+          <p className="text-3xl mb-3">🗂️</p>
+          <p className="text-gray-600 font-medium">אין מתודות עדיין</p>
+          <p className="text-gray-400 text-sm mt-1">הוסף מתודה — STAR, Prioritization, כל framework שאתה משתמש בו.</p>
+        </div>
+      )}
+
+      {/* Accordion list */}
+      <div className="space-y-2">
+        {methods.map(m => (
+          <div key={m.id} className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden fade-in">
+            {/* Title row */}
+            <div
+              className="flex items-center justify-between px-5 py-4 cursor-pointer hover:bg-gray-50 transition"
+              onClick={() => setOpenId(o => o === m.id ? null : m.id)}
+            >
+              <p className="font-semibold text-gray-800 text-sm flex-1">{m.title}</p>
+              <div className="flex items-center gap-2 ml-3" onClick={e => e.stopPropagation()}>
+                <button onClick={() => startEdit(m)} className="text-xs text-indigo-600 hover:text-indigo-800 px-2 py-1 rounded-lg hover:bg-indigo-50">Edit</button>
+                <button onClick={() => { if (window.confirm('מחק מתודה זו?')) onDelete(m.id); }} className="text-xs text-red-400 hover:text-red-600 px-2 py-1 rounded-lg hover:bg-red-50">Delete</button>
+                <span className={`text-gray-400 text-xs transition-transform ${openId === m.id ? 'rotate-180' : ''}`}>▼</span>
+              </div>
+            </div>
+            {/* Body */}
+            {openId === m.id && (
+              <div className="px-5 pb-5 border-t border-gray-100 pt-4 fade-in">
+                <div className="prose prose-sm max-w-none text-gray-700" dangerouslySetInnerHTML={{ __html: m.body }} />
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ─── Seeded Stories ───────────────────────────────────────────────────────────
 
 const SEED_STORIES = [];
@@ -959,6 +1051,8 @@ const GH_STORIES_RAW = `https://raw.githubusercontent.com/${GH_REPO}/main/storie
 const GH_STORIES_API = `https://api.github.com/repos/${GH_REPO}/contents/stories.json`;
 const GH_QUESTIONS_RAW = `https://raw.githubusercontent.com/${GH_REPO}/main/custom_questions.json`;
 const GH_QUESTIONS_API = `https://api.github.com/repos/${GH_REPO}/contents/custom_questions.json`;
+const GH_METHODS_RAW   = `https://raw.githubusercontent.com/${GH_REPO}/main/methods.json`;
+const GH_METHODS_API   = `https://api.github.com/repos/${GH_REPO}/contents/methods.json`;
 
 // ─── App Root ─────────────────────────────────────────────────────────────────
 
@@ -972,6 +1066,10 @@ function App() {
 
   const [customQuestions, setCustomQuestions] = useState(() => {
     try { return JSON.parse(localStorage.getItem('pm_custom_qs') || '[]'); } catch { return []; }
+  });
+
+  const [methods, setMethods] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('pm_methods') || '[]'); } catch { return []; }
   });
 
   // GitHub sync state
@@ -1000,17 +1098,38 @@ function App() {
           localStorage.setItem('pm_custom_qs', JSON.stringify(data));
         }
       }).catch(() => {});
+    fetch(GH_METHODS_RAW + t)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) {
+          setMethods(data);
+          localStorage.setItem('pm_methods', JSON.stringify(data));
+        }
+      }).catch(() => {});
   }, []);
 
   const allQuestions = [...PRESET_QUESTIONS, ...customQuestions];
 
   useEffect(() => { localStorage.setItem('pm_stories', JSON.stringify(stories)); }, [stories]);
   useEffect(() => { localStorage.setItem('pm_custom_qs', JSON.stringify(customQuestions)); }, [customQuestions]);
+  useEffect(() => { localStorage.setItem('pm_methods', JSON.stringify(methods)); }, [methods]);
 
   function addStory(data)    { setStories(p => [{ id: uid(), ...data }, ...p]); }
   function editStory(id, data) { setStories(p => p.map(s => s.id === id ? { ...s, ...data } : s)); }
   function deleteStory(id)   { setStories(p => p.filter(s => s.id !== id)); }
   function addCustomQ(data)  { setCustomQuestions(p => [{ id: uid(), ...data }, ...p]); }
+
+  function addMethod(data)        { setMethods(p => [...p, { id: uid(), ...data }]); }
+  function editMethod(id, data)   { setMethods(p => p.map(m => m.id === id ? { ...m, ...data } : m)); }
+  function deleteMethod(id)       { setMethods(p => p.filter(m => m.id !== id)); }
+  function reorderMethods(from, to) {
+    setMethods(p => {
+      const next = [...p];
+      const [item] = next.splice(from, 1);
+      next.splice(to, 0, item);
+      return next;
+    });
+  }
 
   function saveToken() {
     const t = tokenDraft.trim();
@@ -1045,6 +1164,7 @@ function App() {
       await Promise.all([
         ghPutFile(GH_STORIES_API,   stories,         ghToken, 'Update stories via app'),
         ghPutFile(GH_QUESTIONS_API, customQuestions, ghToken, 'Update custom questions via app'),
+        ghPutFile(GH_METHODS_API,   methods,         ghToken, 'Update methods via app'),
       ]);
       setSyncStatus('ok');
     } catch(e) { setSyncStatus('error'); }
@@ -1055,6 +1175,7 @@ function App() {
   const tabs = [
     { id:'practice',  label:'🎯 Practice' },
     { id:'stories',   label:`📖 Story Bank${stories.length > 0 ? ` (${stories.length})` : ''}` },
+    { id:'methods',   label:'🗂️ Methods' },
     { id:'questions', label:`❓ Questions (${allQuestions.length})` },
   ];
 
@@ -1124,6 +1245,7 @@ function App() {
       <main className="max-w-4xl mx-auto px-4 py-6">
         {activeTab === 'practice'  && <PracticeTab  stories={stories} questions={allQuestions} />}
         {activeTab === 'stories'   && <StoryBankTab stories={stories} onAdd={addStory} onEdit={editStory} onDelete={deleteStory} />}
+        {activeTab === 'methods'   && <MethodsTab   methods={methods} onAdd={addMethod} onEdit={editMethod} onDelete={deleteMethod} />}
         {activeTab === 'questions' && <QuestionsTab questions={allQuestions} onAdd={addCustomQ} />}
       </main>
     </div>
