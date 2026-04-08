@@ -789,6 +789,17 @@ function StoryBankTab({ stories, onAdd, onEdit, onDelete }) {
   function startEdit(id) { setEditId(id); setShowForm(false); }
   function cancelEdit() { setEditId(null); }
 
+  function handleExport() {
+    const json = JSON.stringify(stories, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = 'pm_stories.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <div className="max-w-3xl mx-auto space-y-5">
       {/* Header */}
@@ -797,7 +808,14 @@ function StoryBankTab({ stories, onAdd, onEdit, onDelete }) {
           <option value="All">All categories</option>
           {CATEGORIES.map(c => <option key={c}>{c}</option>)}
         </select>
-        <button onClick={() => { setShowForm(true); setEditId(null); }} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm">+ Add Story</button>
+        <div className="flex gap-2">
+          {stories.length > 0 && (
+            <button onClick={handleExport} className="border border-gray-300 text-gray-600 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 shadow-sm flex items-center gap-1.5">
+              ⬇️ Export JSON
+            </button>
+          )}
+          <button onClick={() => { setShowForm(true); setEditId(null); }} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm">+ Add Story</button>
+        </div>
       </div>
 
       {/* Add form */}
