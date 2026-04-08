@@ -912,13 +912,11 @@ function App() {
   const [stories, setStories] = useState(() => {
     try {
       const saved = JSON.parse(localStorage.getItem('pm_stories') || '[]');
-      const seedsApplied = localStorage.getItem('pm_seeds_applied');
-      if (!seedsApplied) {
-        const seedIds = new Set(SEED_STORIES.map(s => s.id));
-        const existing = saved.filter(s => !seedIds.has(s.id));
-        const merged = [...SEED_STORIES, ...existing];
+      const savedIds = new Set(saved.map(s => s.id));
+      const missingSeed = SEED_STORIES.filter(s => !savedIds.has(s.id));
+      if (missingSeed.length > 0) {
+        const merged = [...missingSeed, ...saved];
         localStorage.setItem('pm_stories', JSON.stringify(merged));
-        localStorage.setItem('pm_seeds_applied', '1');
         return merged;
       }
       return saved;
