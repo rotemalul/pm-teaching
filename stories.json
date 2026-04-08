@@ -1,0 +1,51 @@
+[
+  {
+    "id": "seed_1",
+    "title": "Built internal Related Articles widget to replace Taboola at Minute Media",
+    "text": "At Minute Media, our leading sports content website had 350 million viewers a month across 10 languages. We were looking for ways to help readers stay longer and read more content. The initial idea was to add a 3rd party tool like Taboola — we implemented it quickly and started earning revenue from it.\n\nA few weeks in, we noticed our Google Search ranking had dropped and we were no longer the first result. We also had technical loading issues on some article pages.\n\nI started investigating solutions and came up with an idea: use our internal context tool to pull connections between articles and build a proprietary 'Related Articles' widget directly inside our pages. Convincing management wasn't easy — I had to make the case to give up Taboola's revenue stream. My argument, backed by the engineering team, was that we could improve performance, fix the technical issue, and get back to the top of Google Search, which was worth more than the Taboola revenue.\n\nWe built a quick MVP in one sprint that pulled related articles from our database and displayed them inline. We ran an A/B test and found that more users clicked our proprietary Related Articles widget than Taboola's. It also loaded faster. After a week of testing, we removed Taboola's widget and rolled out our own. The results: session time improved ~10%, pages per session increased ~40% on average, and we regained our #1 position in Google Search.",
+    "categories": [
+      "Prioritization",
+      "Problem Solving",
+      "Execution",
+      "Leadership",
+      "Stakeholder Management",
+      "Data & Analytics",
+      "Customer Focus"
+    ]
+  },
+  {
+    "id": "seed_2",
+    "title": "Used QBR lost-deal data to unlock a critical API feature at Primis",
+    "text": "At Primis, I managed a scrum team called Production, working on customer integrations and onboarding, zero-to-one projects, and bugs. After a few weeks I identified a missing API feature that competitors had — but couldn't get management to approve it due to time pressure. At a QBR, the sales team's data showed 15% of deals were lost specifically because of this missing feature. I photographed that slide and used it in my next management meeting to make the case. I worked with engineering to ship an MVP in one sprint, partnered with the Content team and a design partner for feedback, iterated, and deployed. During that same period an enterprise client closed a deal specifically because of this feature.",
+    "categories": [
+      "Data & Analytics",
+      "Stakeholder Management",
+      "Leadership",
+      "Problem Solving",
+      "Execution",
+      "Customer Focus",
+      "Prioritization"
+    ]
+  },
+  {
+    "id": "1ypjt821",
+    "title": "🏆 Success / Product Strategy Story: The \"Build vs. Buy\" SEO Win",
+    "text": "<p><strong>Situation: *</strong> At Minute Media, our sports network had 350 million monthly viewers. To keep users on the site longer, we integrated Taboola. It generated quick revenue, but it created a massive problem: it slowed down our page loads and crashed our Google Search ranking. We lost our #1 spot. </p><p><strong>Task: *</strong> I needed to fix the performance and SEO drop. The biggest challenge? I had to convince management to kill a tool that was actively making money. </p><p><strong>Action (The Strategy): *</strong> I pitched building our own in-house \"Related Articles\" widget using our internal data. I aligned with engineering and made a data-backed case to management: regaining our SEO traffic was worth more than Taboola's short-term revenue. Instead of a massive project, we built a Lean MVP in just one sprint. We ran a head-to-head A/B test: our in-house widget vs. Taboola. </p><p><strong>Result (The Impact): *</strong> The test proved our in-house widget loaded faster AND got more clicks. We completely removed Taboola. The metrics: Session time improved by ~10%, pages per session jumped by ~40%, and most importantly, we successfully regained our #1 position on Google Search.</p>",
+    "categories": [
+      "Leadership",
+      "Prioritization",
+      "Stakeholder Management",
+      "Communication"
+    ]
+  },
+  {
+    "id": "v943ofrk",
+    "title": "🏆 Success / Product Strategy Story: The Missing API & Data-Driven Pushback",
+    "text": "<p><strong>Situation: *</strong> At Primis—a video discovery and monetization platform for publishers—I managed a scrum team handling integrations and zero-to-one projects. I noticed a gap in our product based on my past experience: we were missing a key API feature that all our competitors had. </p><p><strong>Task: *</strong> I wanted to build it, but management pushed back hard. They rejected it due to strict time constraints and other priorities. I needed to prove the business value. </p><p><strong>Action (The Data &amp; Execution): *</strong> During a company QBR, the Sales team presented a slide showing that <u>15% of lost deals were</u> directly caused by this missing API. I literally took a picture of that slide! I brought that exact data to my next management meeting to build my business case, and got the green light. To minimize risk, we built a Lean MVP in just one sprint. We then partnered with our Content team to work with a design partner and to get real-world feedback, iterated quickly, and fully deployed it. </p><p><strong>Result (The Impact): *</strong> * The feature was shipped fast and successfully. </p><ul><li>During that exact same period, Sales managed to close a massive 2 million dollars deal with an enterprise client specifically because we finally had this API.</li><li>The bigger picture: It actually unlocked a whole new tier of larger enterprise clients for the company. These were huge deals we simply couldn't compete for without this feature.</li></ul>",
+    "categories": [
+      "Execution",
+      "Communication",
+      "Data & Analytics"
+    ]
+  }
+]
