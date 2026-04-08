@@ -1143,7 +1143,8 @@ function App() {
     const content = btoa(unescape(encodeURIComponent(JSON.stringify(data, null, 2))));
     let sha;
     const getRes = await fetch(apiUrl, {
-      headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github+json' }
+      headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github+json' },
+      cache: 'no-store'
     });
     if (getRes.ok) { const f = await getRes.json(); sha = f.sha; }
     const body = { message, content };
@@ -1161,11 +1162,9 @@ function App() {
     setPublishing(true);
     setSyncStatus(null);
     try {
-      await Promise.all([
-        ghPutFile(GH_STORIES_API,   stories,         ghToken, 'Update stories via app'),
-        ghPutFile(GH_QUESTIONS_API, customQuestions, ghToken, 'Update custom questions via app'),
-        ghPutFile(GH_METHODS_API,   methods,         ghToken, 'Update methods via app'),
-      ]);
+      await ghPutFile(GH_STORIES_API,   stories,         ghToken, 'Update stories via app');
+      await ghPutFile(GH_QUESTIONS_API, customQuestions, ghToken, 'Update custom questions via app');
+      await ghPutFile(GH_METHODS_API,   methods,         ghToken, 'Update methods via app');
       setSyncStatus('ok');
     } catch(e) { setSyncStatus('error'); }
     setPublishing(false);
