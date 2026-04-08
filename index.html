@@ -959,38 +959,89 @@ function QuestionsTab({ questions, onAdd }) {
 
 const SEED_STORIES = [];
 
+// ─── GitHub Sync ──────────────────────────────────────────────────────────────
+
+const GH_REPO    = 'rotemalul/pm-teaching';
+const GH_FILE    = 'stories.json';
+const GH_RAW_URL = `https://raw.githubusercontent.com/${GH_REPO}/main/${GH_FILE}`;
+const GH_API_URL = `https://api.github.com/repos/${GH_REPO}/contents/${GH_FILE}`;
+
 // ─── App Root ─────────────────────────────────────────────────────────────────
 
 function App() {
   const [activeTab, setActiveTab] = useState('practice');
 
   const [stories, setStories] = useState(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem('pm_stories') || '[]');
-      const savedIds = new Set(saved.map(s => s.id));
-      const missingSeed = SEED_STORIES.filter(s => !savedIds.has(s.id));
-      if (missingSeed.length > 0) {
-        const merged = [...missingSeed, ...saved];
-        localStorage.setItem('pm_stories', JSON.stringify(merged));
-        return merged;
-      }
-      return saved;
-    } catch { return SEED_STORIES; }
+    try { return JSON.parse(localStorage.getItem('pm_stories') || '[]'); }
+    catch { return []; }
   });
 
   const [customQuestions, setCustomQuestions] = useState(() => {
     try { return JSON.parse(localStorage.getItem('pm_custom_qs') || '[]'); } catch { return []; }
   });
 
+  // GitHub sync state
+  const [ghToken,       setGhToken]       = useState(() => localStorage.getItem('pm_gh_token') || '');
+  const [publishing,    setPublishing]    = useState(false);
+  const [syncStatus,    setSyncStatus]    = useState(null); // 'ok' | 'error' | null
+  const [showTokenModal, setShowTokenModal] = useState(false);
+  const [tokenDraft,    setTokenDraft]    = useState('');
+
+  // On load: fetch stories.json from GitHub (public repo, no token needed)
+  useEffect(() => {
+    fetch(GH_RAW_URL + '?t=' + Date.now())
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) {
+          setStories(data);
+          localStorage.setItem('pm_stories', JSON.stringify(data));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   const allQuestions = [...PRESET_QUESTIONS, ...customQuestions];
 
   useEffect(() => { localStorage.setItem('pm_stories', JSON.stringify(stories)); }, [stories]);
   useEffect(() => { localStorage.setItem('pm_custom_qs', JSON.stringify(customQuestions)); }, [customQuestions]);
 
-  function addStory(data)  { setStories(p => [{ id: uid(), ...data }, ...p]); }
+  function addStory(data)    { setStories(p => [{ id: uid(), ...data }, ...p]); }
   function editStory(id, data) { setStories(p => p.map(s => s.id === id ? { ...s, ...data } : s)); }
-  function deleteStory(id) { setStories(p => p.filter(s => s.id !== id)); }
-  function addCustomQ(data) { setCustomQuestions(p => [{ id: uid(), ...data }, ...p]); }
+  function deleteStory(id)   { setStories(p => p.filter(s => s.id !== id)); }
+  function addCustomQ(data)  { setCustomQuestions(p => [{ id: uid(), ...data }, ...p]); }
+
+  function saveToken() {
+    const t = tokenDraft.trim();
+    localStorage.setItem('pm_gh_token', t);
+    setGhToken(t);
+    setShowTokenModal(false);
+    setTokenDraft('');
+  }
+
+  async function publishToGitHub() {
+    if (!ghToken) { setTokenDraft(''); setShowTokenModal(true); return; }
+    setPublishing(true);
+    setSyncStatus(null);
+    try {
+      const content = btoa(unescape(encodeURIComponent(JSON.stringify(stories, null, 2))));
+      // Get existing file SHA (needed for updates)
+      let sha;
+      const getRes = await fetch(GH_API_URL, {
+        headers: { Authorization: `token ${ghToken}`, Accept: 'application/vnd.github+json' }
+      });
+      if (getRes.ok) { const f = await getRes.json(); sha = f.sha; }
+      const body = { message: 'Update stories via app', content };
+      if (sha) body.sha = sha;
+      const putRes = await fetch(GH_API_URL, {
+        method: 'PUT',
+        headers: { Authorization: `token ${ghToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      setSyncStatus(putRes.ok ? 'ok' : 'error');
+    } catch(e) { setSyncStatus('error'); }
+    setPublishing(false);
+    setTimeout(() => setSyncStatus(null), 4000);
+  }
 
   const tabs = [
     { id:'practice',  label:'🎯 Practice' },
@@ -1000,10 +1051,37 @@ function App() {
 
   return (
     <div className="min-h-screen bg-slate-50">
+      {/* Token modal */}
+      {showTokenModal && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={() => setShowTokenModal(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 fade-in" onClick={e => e.stopPropagation()}>
+            <h2 className="text-base font-semibold text-gray-800 mb-1">GitHub Token</h2>
+            <p className="text-xs text-gray-500 mb-4">
+              נדרש token עם הרשאת <code className="bg-gray-100 px-1 rounded">repo</code> כדי לשמור ל-GitHub.<br/>
+              נשמר רק אצלך בדפדפן — לא עולה לשום שרת.
+            </p>
+            <input
+              type="password"
+              value={tokenDraft}
+              onChange={e => setTokenDraft(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && saveToken()}
+              placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-400 mb-3"
+              autoFocus
+            />
+            <div className="flex gap-2">
+              <button onClick={saveToken} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium">שמור Token</button>
+              <button onClick={() => setShowTokenModal(false)} className="border border-gray-300 text-gray-600 px-4 py-2 rounded-lg text-sm hover:bg-gray-50">ביטול</button>
+              {ghToken && <button onClick={() => { localStorage.removeItem('pm_gh_token'); setGhToken(''); setShowTokenModal(false); }} className="text-red-400 hover:text-red-600 text-sm px-2">מחק token</button>}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm">
         <div className="max-w-4xl mx-auto px-4">
-          <div className="flex items-center gap-4 py-3">
+          <div className="flex items-center gap-3 py-3">
             <div>
               <h1 className="text-base font-bold text-gray-900">PM Behavioral Prep</h1>
               <p className="text-xs text-gray-400 leading-none mt-0.5">Match your stories to any question</p>
@@ -1013,6 +1091,22 @@ function App() {
                 <button key={t.id} onClick={() => setActiveTab(t.id)} className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${activeTab===t.id ? 'bg-indigo-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}>{t.label}</button>
               ))}
             </nav>
+            {/* Publish button */}
+            <button
+              onClick={publishToGitHub}
+              disabled={publishing}
+              className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium border transition disabled:opacity-50
+                ${syncStatus === 'ok'    ? 'bg-emerald-50 border-emerald-300 text-emerald-700' :
+                  syncStatus === 'error' ? 'bg-red-50 border-red-300 text-red-600' :
+                  'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'}`}
+            >
+              {publishing    ? <span className="animate-pulse">⏳</span> :
+               syncStatus === 'ok'    ? '✅' :
+               syncStatus === 'error' ? '❌' : '☁️'}
+              {publishing ? 'מפרסם…' : syncStatus === 'ok' ? 'נשמר!' : syncStatus === 'error' ? 'שגיאה' : 'Publish'}
+            </button>
+            {/* Token settings */}
+            <button onClick={() => { setTokenDraft(ghToken); setShowTokenModal(true); }} className="text-gray-400 hover:text-gray-600 text-lg leading-none" title="הגדרות GitHub Token">⚙️</button>
           </div>
         </div>
       </header>
