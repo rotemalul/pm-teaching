@@ -854,15 +854,18 @@ function StoryBankTab({ stories, onAdd, onEdit, onDelete }) {
               ) : (
                 <>
                   <div className="p-4">
-                    <div className="flex justify-between items-start gap-2">
+                    <div
+                      className="flex justify-between items-start gap-2 cursor-pointer"
+                      onClick={() => setExpanded(e => e === story.id ? null : story.id)}
+                    >
                       <div>
                         <p className="font-semibold text-gray-800 text-sm">{story.title}</p>
                         <div className="flex flex-wrap gap-1 mt-1.5">{story.categories.map(c => <Tag key={c} label={c} small />)}</div>
                       </div>
-                      <div className="flex gap-1 shrink-0">
-                        <button onClick={() => setExpanded(e => e === story.id ? null : story.id)} className="text-xs text-gray-400 hover:text-gray-600 px-2 py-1 rounded-lg hover:bg-gray-100">{expanded === story.id ? "▲" : "▼"}</button>
+                      <div className="flex gap-1 shrink-0" onClick={e => e.stopPropagation()}>
                         <button onClick={() => startEdit(story.id)} className="text-xs text-indigo-600 hover:text-indigo-800 px-2 py-1 rounded-lg hover:bg-indigo-50">Edit</button>
                         <button onClick={() => { if(window.confirm('Delete this story?')) onDelete(story.id); }} className="text-xs text-red-400 hover:text-red-600 px-2 py-1 rounded-lg hover:bg-red-50">Delete</button>
+                        <span className="text-xs text-gray-400 px-2 py-1">{expanded === story.id ? "▲" : "▼"}</span>
                       </div>
                     </div>
                     {expanded !== story.id && <p className="text-xs text-gray-400 mt-2 line-clamp-2">{stripHtml(story.text)}</p>}
